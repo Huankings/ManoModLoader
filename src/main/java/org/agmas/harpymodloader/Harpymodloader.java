@@ -1,6 +1,7 @@
 package org.agmas.harpymodloader;
 
 import dev.doctor4t.wathe.api.GameMode;
+import dev.doctor4t.wathe.api.Faction;
 import dev.doctor4t.wathe.api.Role;
 import dev.doctor4t.wathe.api.WatheGameModes;
 import dev.doctor4t.wathe.api.WatheRoles;
@@ -70,6 +71,16 @@ public class Harpymodloader implements ModInitializer {
         SPECIAL_ROLES.add(WatheRoles.CIVILIAN); // civilian is considered special since it can't be assigned, just given out to everyone
 
         OVERWRITE_ROLES.add(WatheRoles.CIVILIAN);
+        /*
+         * 扩展义警职业需要以“原版义警位”为替换基底，
+         * 因此这里也必须把 vanilla vigilante 视为可覆写角色。
+         *
+         * 否则后续像 Better Vigilante 这类职业在替换流程里永远拿不到候选玩家，
+         * 表现出来就是：
+         * 1. 随机怎么开都刷不出来；
+         * 2. forceRole 指到义警阵营职业时，最终也会掉回平民。
+         */
+        OVERWRITE_ROLES.add(WatheRoles.VIGILANTE);
         OVERWRITE_ROLES.add(WatheRoles.KILLER);
 
         ModdedWeights.init();
@@ -122,6 +133,18 @@ public class Harpymodloader implements ModInitializer {
 
     public static void setRoleMaximum(Role role, Integer max) {
         setRoleMaximum(role.identifier(), max);
+    }
+
+    /**
+     * 判断某个职业是否属于指定阵营。
+     *
+     * <p>HarpyModLoader 过去很多地方仍在使用
+     * {@code isInnocent()} / {@code canUseKiller()} 这套旧语义做角色池划分。
+     * 这里补一个统一入口后，扩展职业只要显式注册了阵营，
+     * 后续分配逻辑就可以稳定按阵营工作。</p>
+     */
+    public static boolean isFaction(Role role, Faction faction) {
+        return role != null && role.getFaction() == faction;
     }
 
     public void registerCommands() {
