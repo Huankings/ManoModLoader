@@ -8,6 +8,7 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import java.util.ArrayList;
 import org.agmas.harpymodloader.Harpymodloader;
+import org.agmas.harpymodloader.client.instinct.HarpyInstinctHandlers;
 import org.agmas.harpymodloader.modifiers.Modifier;
 
 public class HarpymodloaderClient implements ClientModInitializer {
@@ -18,6 +19,8 @@ public class HarpymodloaderClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        HarpyInstinctHandlers.register();
+
         ClientPlayConnectionEvents.JOIN.register((clientPlayNetworkHandler, packetSender, minecraftClient) -> {
             Harpymodloader.refreshRoles();
         });
