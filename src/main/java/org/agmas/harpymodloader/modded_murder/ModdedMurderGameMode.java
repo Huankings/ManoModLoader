@@ -142,26 +142,12 @@ public class ModdedMurderGameMode extends MurderGameMode {
                 if (Harpymodloader.MODIFIER_MAX.containsKey(mod.identifier))
                     if (playersAssigned >= Harpymodloader.MODIFIER_MAX.get(mod.identifier)) continue;
 
-                boolean valid = true;
-
-                if (mod.canOnlyBeAppliedTo != null) {
-                    if (gameWorldComponent.getRole(player) != null) {
-                        valid = mod.canOnlyBeAppliedTo.contains(gameWorldComponent.getRole(player));
-                    }
-                }
-                if (mod.cannotBeAppliedTo != null) {
-                    if (gameWorldComponent.getRole(player) != null) {
-                        valid = !mod.cannotBeAppliedTo.contains(gameWorldComponent.getRole(player));
-                    }
-                }
-                if (!valid) continue;
-
-                if (mod.killerOnly) {
-                    valid = gameWorldComponent.canUseKillerFeatures(player);
-                }
-                if (mod.civilianOnly) {
-                    valid = !gameWorldComponent.canUseKillerFeatures(player);
-                }
+                /*
+                 * 词条适用条件统一交给 Modifier#canApplyTo。
+                 * 它会先执行旧的静态白名单/黑名单/killerOnly/civilianOnly，
+                 * 再执行新增的动态 predicate，方便扩展词条读取 Wathe 公开 API。
+                 */
+                boolean valid = mod.canApplyTo(gameWorldComponent, player);
                 if (!valid) continue;
 
                 if (worldModifierComponent.getModifiers(player) != null && worldModifierComponent.getModifiers(player).size() >= HarpyModLoaderConfig.HANDLER.instance().modifierMaximum)
