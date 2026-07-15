@@ -13,7 +13,6 @@
   },
   "mixins": [
     "CustomRolesRoleNameRendererMixin",
-    "InnocenceReliantWinTextMixin",
-    "MoodRendererMixin"
+    "InnocenceReliantWinTextMixin"
   ]
 }
