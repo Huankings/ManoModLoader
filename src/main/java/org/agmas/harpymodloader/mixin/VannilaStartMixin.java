@@ -24,4 +24,14 @@ public class VannilaStartMixin {
     private static void a(ServerCommandSource source, GameMode gameMode, MapEffect mapEffect, int minutes, CallbackInfoReturnable<Integer> cir) {
         if (gameMode.equals(WatheGameModes.MURDER)) Harpymodloader.wantsToStartVannila = true;
      }
+
+    @Inject(method = "execute", at = @At("RETURN"))
+    private static void clearVanillaStartIntent(ServerCommandSource source, GameMode gameMode, MapEffect mapEffect, int minutes, CallbackInfoReturnable<Integer> cir) {
+        /*
+         * execute 可能因为对局已在运行、人数不足等原因提前结束，根本不会进入
+         * GameFunctions.initializeGame。此时如果不在命令返回点清理标记，
+         * 下一次自动开局会错误地继续使用原版 Murder。
+         */
+        Harpymodloader.wantsToStartVannila = false;
+    }
 }

@@ -6,6 +6,7 @@ import dev.doctor4t.wathe.api.Role;
 import dev.doctor4t.wathe.api.WatheGameModes;
 import dev.doctor4t.wathe.api.WatheRoles;
 import dev.doctor4t.wathe.client.gui.RoleAnnouncementTexts;
+import dev.doctor4t.wathe.game.GameFunctions;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.ArgumentTypeRegistry;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -89,10 +90,37 @@ public class Harpymodloader implements ModInitializer {
         HMLModifiers.init();
 
         MODDED_GAMEMODE = WatheGameModes.registerGameMode(Identifier.of(MOD_ID, "modded"), new ModdedMurderGameMode(Identifier.of(MOD_ID, "modded")));
+        registerStartGameModeResolver();
 
         ServerLifecycleEvents.SERVER_STARTED.register((minecraftServer -> {
             refreshRoles();
         }));
+    }
+
+    private static void registerStartGameModeResolver() {
+        GameFunctions.registerStartGameModeResolver((world, gameMode) -> {
+            /*
+             * Harpy 默认会接管 Wathe 的 Murder 开局，把它替换成 modded murder。
+             * 这个解析器运行在 Wathe 人数判断和自动开局 HUD 之前，
+             * 因此 /wathe:startPlayerCount mode harpymodloader:modded <人数>
+             * 才能真正控制 Harpy 玩法的开局人数。
+             *
+             * 当管理员显式执行 /wathe:start murder ... 时，VannilaStartMixin 会临时设置
+             * wantsToStartVannila，此时保持原版 Murder，不做替换。
+             */
+            if (gameMode == WatheGameModes.MURDER && !wantsToStartVannila) {
+                return MODDED_GAMEMODE;
+            }
+            return gameMode;
+        });
+        GameFunctions.registerAfterStartGameAttempt(() -> {
+            /*
+             * wantsToStartVannila 只表达“这一次 /wathe:start murder 想开原版 Murder”。
+             * 若本次因为人数不足、投票中或重复开局而没有进入 initializeGame，
+             * 也必须在 startGame 结束时清掉，否则后续自动开局会误以为还要保留原版 Murder。
+             */
+            wantsToStartVannila = false;
+        });
     }
 
     //
