@@ -27,8 +27,10 @@ import net.minecraft.util.Language;
 import org.agmas.harpymodloader.commands.ForceModifierCommand;
 import org.agmas.harpymodloader.commands.ForceRoleCommand;
 import org.agmas.harpymodloader.commands.ListRolesCommand;
+import org.agmas.harpymodloader.commands.RoleWeightsCommand;
 import org.agmas.harpymodloader.commands.SetEnabledModifierCommand;
 import org.agmas.harpymodloader.commands.SetEnabledRoleCommand;
+import org.agmas.harpymodloader.commands.SetRoleCommand;
 import org.agmas.harpymodloader.commands.argument.ModifierArgumentType;
 import org.agmas.harpymodloader.commands.argument.RoleArgumentType;
 import org.agmas.harpymodloader.config.HarpyModLoaderConfig;
@@ -144,15 +146,35 @@ public class Harpymodloader implements ModInitializer {
 
     public static void addToForcedModifiers(Modifier modifier, PlayerEntity player) {
         if (!FORCED_MODDED_MODIFIER.containsKey(modifier)) FORCED_MODDED_MODIFIER.put(modifier, new ArrayList<>());
-        FORCED_MODDED_MODIFIER.get(modifier).add(player.getUuid());
+        /*
+         * forceModifier 允许一个玩家被强制多个不同词条，但同一个词条不需要重复记录。
+         * 去重可以避免管理员连续点同一条命令后，查询和后续维护看到一堆重复 UUID。
+         */
+        if (!FORCED_MODDED_MODIFIER.get(modifier).contains(player.getUuid())) {
+            FORCED_MODDED_MODIFIER.get(modifier).add(player.getUuid());
+        }
 
     }
 
     public static void addToForcedRoles(Role role, PlayerEntity player) {
-        if (!FORCED_MODDED_ROLE.containsKey(role)) FORCED_MODDED_ROLE.put(role, new ArrayList<>());
-        FORCED_MODDED_ROLE.get(role).add(player.getUuid());
+        UUID playerUuid = player.getUuid();
+        Role previousRole = FORCED_MODDED_ROLE_FLIP.put(playerUuid, role);
+        /*
+         * 一个玩家同一局只能被强制成一个职业。
+         * 旧逻辑只更新了 uuid -> role 的反查表，却没有从旧 role -> uuid 列表里移除玩家；
+         * 管理员如果先后执行两次 /forceRole，开局替换阶段就可能同时把玩家当成两个强制职业候选。
+         */
+        if (previousRole != null && previousRole != role && FORCED_MODDED_ROLE.containsKey(previousRole)) {
+            FORCED_MODDED_ROLE.get(previousRole).remove(playerUuid);
+            if (FORCED_MODDED_ROLE.get(previousRole).isEmpty()) {
+                FORCED_MODDED_ROLE.remove(previousRole);
+            }
+        }
 
-        FORCED_MODDED_ROLE_FLIP.put(player.getUuid(), role);
+        if (!FORCED_MODDED_ROLE.containsKey(role)) FORCED_MODDED_ROLE.put(role, new ArrayList<>());
+        if (!FORCED_MODDED_ROLE.get(role).contains(playerUuid)) {
+            FORCED_MODDED_ROLE.get(role).add(playerUuid);
+        }
     }
 
     public static void setRoleMaximum(Identifier role, Integer max) {
@@ -189,6 +211,8 @@ public class Harpymodloader implements ModInitializer {
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             ForceRoleCommand.register(dispatcher);
+            SetRoleCommand.register(dispatcher);
+            RoleWeightsCommand.register(dispatcher);
             SetEnabledRoleCommand.register(dispatcher);
             ListRolesCommand.register(dispatcher);
             ForceModifierCommand.register(dispatcher);
