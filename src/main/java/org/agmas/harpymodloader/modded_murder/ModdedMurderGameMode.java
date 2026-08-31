@@ -438,7 +438,7 @@ public class ModdedMurderGameMode extends MurderGameMode {
                 players,
                 gameWorldComponent,
                 world,
-                Harpymodloader.isFaction(role, Faction.NEUTRAL),
+                true,
                 true
         );
     }
@@ -477,8 +477,13 @@ public class ModdedMurderGameMode extends MurderGameMode {
 
             /*
              * 扩展职业不再维护独立的 ModdedWeights 静态计数，而是统一读取 Wathe 的 scoreboard 权重账本。
-             * 这样原版杀手/义警位、中立位以及所有扩展具体职业都会在同一套历史里计算，
-             * 避免“某人没连续当同一个职业，却连续当稀缺阵营”的偏置漏网。
+             *
+             * 这里同时吃“阵营历史”和“具体职业历史”：
+             * 1. 阵营历史负责避免同一批玩家总反复抽到杀手 / 中立 / 义警；
+             * 2. 具体职业历史负责避免同一个扩展职业总落到同一个人身上。
+             *
+             * 这样新玩家虽然默认从 1.0 起步，但老玩家只要连续几把没拿到对应阵营，
+             * 权重会更快回升，不会被新人直接压住。
              */
             ScoreboardRoleSelectorComponent roleSelector = ScoreboardRoleSelectorComponent.KEY.get(serverWorld.getScoreboard());
             assignedPlayers.addAll(roleSelector.selectWeightedPlayers(
