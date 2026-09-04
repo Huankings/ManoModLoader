@@ -24,6 +24,7 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import org.agmas.harpymodloader.Harpymodloader;
 import org.agmas.harpymodloader.commands.argument.RoleArgumentType;
+import org.agmas.harpymodloader.config.HarpyModLoaderConfig;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -34,8 +35,13 @@ import java.util.Map;
 import java.util.UUID;
 
 public class RoleWeightsCommand {
-    private static final DynamicCommandExceptionType INVALID_FACTION = new DynamicCommandExceptionType(input -> Text.literal("Unknown faction: " + input));
-    private static final DynamicCommandExceptionType INVALID_UUID = new DynamicCommandExceptionType(input -> Text.literal("Invalid UUID: " + input));
+    private static final String LANG_PREFIX = "commands.harpymodloader.roleweights.";
+    private static final DynamicCommandExceptionType INVALID_FACTION = new DynamicCommandExceptionType(input -> tr("error.invalid_faction", input));
+    private static final DynamicCommandExceptionType INVALID_UUID = new DynamicCommandExceptionType(input -> tr("error.invalid_uuid", input));
+
+    private static MutableText tr(String key, Object... args) {
+        return Text.translatable(LANG_PREFIX + key, args);
+    }
 
     private enum ListScope {
         ALL, ONLINE, STORED
@@ -122,12 +128,12 @@ public class RoleWeightsCommand {
         uuids.sort(Comparator.comparing(uuid -> getDisplayName(uuid, onlinePlayers.get(uuid), selector).getString(), String.CASE_INSENSITIVE_ORDER));
 
         GameWorldComponent gameWorld = GameWorldComponent.KEY.get(source.getWorld());
-        MutableText message = Text.literal("Role Weights ").formatted(Formatting.GRAY)
-                .append(Text.literal("(" + scope.name().toLowerCase(Locale.ROOT) + ", " + (gameWorld.areWeightsEnabled() ? "enabled" : "disabled") + ")")
-                        .formatted(gameWorld.areWeightsEnabled() ? Formatting.GREEN : Formatting.RED));
+        MutableText message = tr("list.header", tr("scope." + scope.name().toLowerCase(Locale.ROOT)),
+                tr(gameWorld.areWeightsEnabled() ? "status.enabled" : "status.disabled"))
+                .formatted(Formatting.GRAY);
 
         if (uuids.isEmpty()) {
-            message.append("\n").append(Text.literal("No stored role weight records.").formatted(Formatting.DARK_GRAY));
+            message.append("\n").append(tr("list.empty").formatted(Formatting.DARK_GRAY));
         }
 
         for (UUID uuid : uuids) {
@@ -150,41 +156,41 @@ public class RoleWeightsCommand {
     private static int setEnabled(CommandContext<ServerCommandSource> context) {
         boolean enabled = BoolArgumentType.getBool(context, "enabled");
         GameWorldComponent.KEY.get(context.getSource().getWorld()).setWeightsEnabled(enabled);
-        context.getSource().sendMessage(Text.literal("Role weights are now " + (enabled ? "enabled" : "disabled") + ".")
+        context.getSource().sendMessage(tr(enabled ? "set_enabled.success" : "set_disabled.success")
                 .formatted(enabled ? Formatting.GREEN : Formatting.RED));
         return 1;
     }
 
     private static int resetAll(CommandContext<ServerCommandSource> context) {
         getSelector(context.getSource()).resetAllWeights();
-        context.getSource().sendMessage(Text.literal("All stored role weights have been reset.").formatted(Formatting.GREEN));
+        context.getSource().sendMessage(tr("reset.all").formatted(Formatting.GREEN));
         return 1;
     }
 
     private static int resetOnline(CommandContext<ServerCommandSource> context) {
         List<ServerPlayerEntity> players = context.getSource().getWorld().getPlayers();
         getSelector(context.getSource()).resetWeights(players);
-        context.getSource().sendMessage(Text.literal("Reset role weights for " + players.size() + " online player(s) in this world.").formatted(Formatting.GREEN));
+        context.getSource().sendMessage(tr("reset.online", players.size()).formatted(Formatting.GREEN));
         return players.size();
     }
 
     private static int resetStoredOffline(CommandContext<ServerCommandSource> context) {
         int removed = getSelector(context.getSource()).resetStoredOfflineWeights(context.getSource().getServer().getPlayerManager().getPlayerList());
-        context.getSource().sendMessage(Text.literal("Reset " + removed + " stored offline role weight record(s).").formatted(Formatting.GREEN));
+        context.getSource().sendMessage(tr("reset.stored_offline", removed).formatted(Formatting.GREEN));
         return removed;
     }
 
     private static int resetPlayers(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         List<ServerPlayerEntity> players = new ArrayList<>(EntityArgumentType.getPlayers(context, "players"));
         getSelector(context.getSource()).resetWeights(players);
-        context.getSource().sendMessage(Text.literal("Reset role weights for " + players.size() + " selected player(s).").formatted(Formatting.GREEN));
+        context.getSource().sendMessage(tr("reset.players", players.size()).formatted(Formatting.GREEN));
         return players.size();
     }
 
     private static int resetUuid(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         UUID uuid = parseUuid(StringArgumentType.getString(context, "uuid"));
         getSelector(context.getSource()).resetWeights(uuid);
-        context.getSource().sendMessage(Text.literal("Reset role weights for " + uuid + ".").formatted(Formatting.GREEN));
+        context.getSource().sendMessage(tr("reset.uuid", uuid).formatted(Formatting.GREEN));
         return 1;
     }
 
@@ -198,12 +204,8 @@ public class RoleWeightsCommand {
          * reset player/all 会把这些覆盖值一起清掉。
          */
         getSelector(context.getSource()).setFactionWeightOverride(player, faction, weight);
-        context.getSource().sendMessage(Text.literal("Set ")
-                .formatted(Formatting.GRAY)
-                .append(player.getDisplayName())
-                .append(Text.literal("'s ").formatted(Formatting.GRAY))
-                .append(formatFaction(faction))
-                .append(Text.literal(" debug weight to %.4f.".formatted(weight)).formatted(Formatting.GRAY)));
+        context.getSource().sendMessage(tr("set_faction.success", player.getDisplayName(), formatFaction(faction), "%.4f".formatted(weight))
+                .formatted(Formatting.GRAY));
         return 1;
     }
 
@@ -216,12 +218,8 @@ public class RoleWeightsCommand {
          * 这能单独测试某个扩展职业的替换概率，而不影响同阵营其它职业。
          */
         getSelector(context.getSource()).setRoleWeightOverride(player, role, weight);
-        context.getSource().sendMessage(Text.literal("Set ")
-                .formatted(Formatting.GRAY)
-                .append(player.getDisplayName())
-                .append(Text.literal("'s ").formatted(Formatting.GRAY))
-                .append(formatRole(role))
-                .append(Text.literal(" debug weight to %.4f.".formatted(weight)).formatted(Formatting.GRAY)));
+        context.getSource().sendMessage(tr("set_role.success", player.getDisplayName(), formatRole(role), "%.4f".formatted(weight))
+                .formatted(Formatting.GRAY));
         return 1;
     }
 
@@ -231,18 +229,20 @@ public class RoleWeightsCommand {
         for (ServerPlayerEntity player : players) {
             selector.clearWeightOverrides(player);
         }
-        context.getSource().sendMessage(Text.literal("Cleared debug weight overrides for " + players.size() + " player(s).").formatted(Formatting.GREEN));
+        context.getSource().sendMessage(tr("clear_override.success", players.size()).formatted(Formatting.GREEN));
         return players.size();
     }
 
     private static int previewFaction(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         Faction faction = parseFaction(StringArgumentType.getString(context, "faction"));
-        return preview(context.getSource(), faction, null, true, false, "faction " + faction.name().toLowerCase(Locale.ROOT));
+        return preview(context.getSource(), faction, null, true, false,
+                tr("preview.target.faction", formatFaction(faction)));
     }
 
     private static int previewRole(CommandContext<ServerCommandSource> context) {
         Role role = RoleArgumentType.getRole(context, "role");
-        return preview(context.getSource(), role.getFaction(), role, true, true, "role " + role.identifier());
+        return preview(context.getSource(), role.getFaction(), role, true, true,
+                tr("preview.target.role", formatRole(role)));
     }
 
     private static int preview(ServerCommandSource source,
@@ -250,31 +250,107 @@ public class RoleWeightsCommand {
                                Role role,
                                boolean includeFactionHistory,
                                boolean includeRoleHistory,
-                               String title) {
-        List<ServerPlayerEntity> players = source.getWorld().getPlayers();
+                               MutableText title) {
+        List<ServerPlayerEntity> players = source.getServer().getPlayerManager().getPlayerList();
         ScoreboardRoleSelectorComponent selector = getSelector(source);
         GameWorldComponent gameWorld = GameWorldComponent.KEY.get(source.getWorld());
-        LinkedHashMap<ServerPlayerEntity, Double> weights = selector.getAssignmentWeights(gameWorld, players, faction, role, includeFactionHistory, includeRoleHistory);
-        double total = weights.values().stream().mapToDouble(Double::doubleValue).sum();
+        int globalSlots = role == null
+                ? selector.estimateFactionSlots(gameWorld, faction, players.size())
+                : estimateRoleSlots(selector, gameWorld, role, players.size());
+        List<ServerPlayerEntity> conditionalCandidates = getConditionalCandidates(gameWorld, faction, role, players);
+        int conditionalSlots = Math.min(globalSlots, conditionalCandidates.size());
+        LinkedHashMap<ServerPlayerEntity, Double> globalWeights = selector.getAssignmentWeights(
+                gameWorld, players, faction, role, globalSlots, includeFactionHistory, includeRoleHistory);
+        LinkedHashMap<ServerPlayerEntity, Double> conditionalWeights = selector.getAssignmentWeights(
+                gameWorld, conditionalCandidates, faction, role, conditionalSlots, includeFactionHistory, includeRoleHistory);
+        double globalTotal = globalWeights.values().stream().mapToDouble(Double::doubleValue).sum();
+        double conditionalTotal = conditionalWeights.values().stream().mapToDouble(Double::doubleValue).sum();
 
         /*
          * preview 只读当前公式计算出的本次概率，不消耗、不记录、不改变职业。
          * 它用于开局前快速检查“谁更容易被抽到杀手/中立/某个扩展职业”。
          */
-        MutableText message = Text.literal("Role Weight Preview: ").formatted(Formatting.GRAY)
-                .append(Text.literal(title).formatted(Formatting.YELLOW));
-        for (Map.Entry<ServerPlayerEntity, Double> entry : weights.entrySet()) {
-            double percentage = total <= 0.0D ? 0.0D : entry.getValue() / total * 100.0D;
-            message.append("\n")
-                    .append(entry.getKey().getDisplayName())
-                    .append(Text.literal(" -> ").formatted(Formatting.GRAY))
-                    .append(Text.literal("%.4f".formatted(entry.getValue())).withColor(0x808080))
-                    .append(Text.literal(" / ").formatted(Formatting.GRAY))
-                    .append(Text.literal("%.2f%%".formatted(percentage)).withColor(0x808080));
+        MutableText message = tr("preview.header", title)
+                .formatted(Formatting.GRAY)
+                .append(tr("preview.global_pool", players.size(), globalSlots).withColor(0x808080))
+                .append(tr("preview.conditional_pool", conditionalCandidates.size(), conditionalSlots).withColor(0x808080));
+        for (Map.Entry<ServerPlayerEntity, Double> entry : globalWeights.entrySet()) {
+            double globalPercentage = globalTotal <= 0.0D ? 0.0D : entry.getValue() / globalTotal * 100.0D;
+            Double conditionalWeight = conditionalWeights.get(entry.getKey());
+            MutableText conditionalPercentage = conditionalWeight == null || conditionalTotal <= 0.0D
+                    ? tr("value.not_available")
+                    : Text.literal("%.2f%%".formatted(conditionalWeight / conditionalTotal * 100.0D));
+            ScoreboardRoleSelectorComponent.RoleWeightRecord record = selector.getRoleWeightRecord(entry.getKey().getUuid());
+            message.append(tr("preview.player", entry.getKey().getDisplayName(), "%.4f".formatted(entry.getValue()),
+                    "%.2f%%".formatted(globalPercentage), conditionalPercentage));
+            if (record != null) {
+                int actual = role == null ? record.getFactionRounds(faction) : record.getRoleRounds(role.identifier());
+                int eligible = role == null ? record.getFactionEligibilityRounds(faction) : record.getRoleEligibilityRounds(role.identifier());
+                message.append(tr("preview.counts", actual, eligible).withColor(0x808080));
+            }
         }
 
         source.sendMessage(message);
-        return weights.size();
+        return globalWeights.size();
+    }
+
+    /**
+     * 生成 preview 所需的当前候选池。
+     * 大厅/非进行中状态没有正在执行的分配阶段，因此保留所有在线玩家作为可参加者；
+     * 对局进行中则按当前已写入的最终职业做一层可读过滤，帮助管理员解释“为什么有人不在条件池”。
+     */
+    private static List<ServerPlayerEntity> getConditionalCandidates(GameWorldComponent gameWorld,
+                                                                       Faction faction,
+                                                                       Role role,
+                                                                       List<ServerPlayerEntity> players) {
+        if (gameWorld.getGameStatus() != GameWorldComponent.GameStatus.ACTIVE) {
+            return new ArrayList<>(players);
+        }
+        ArrayList<ServerPlayerEntity> result = new ArrayList<>();
+        for (ServerPlayerEntity player : players) {
+            Role currentRole = gameWorld.getRole(player);
+            if (currentRole == null || currentRole.getFaction() != faction) {
+                continue;
+            }
+            if (role == null || currentRole == role) {
+                result.add(player);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 估算某个扩展职业在全局开局池中占用的槽位。
+     * Harpy 会按剩余候选人数/剩余职业类型动态分配，因此这里使用启用职业数作为
+     * 可解释的平均值；ROLE_MAX 仍作为硬上限。它只用于 preview，不会改变实际分配。
+     */
+    private static int estimateRoleSlots(ScoreboardRoleSelectorComponent selector,
+                                         GameWorldComponent gameWorld,
+                                         Role role,
+                                         int playerCount) {
+        int factionSlots = selector.estimateFactionSlots(gameWorld, role.getFaction(), playerCount);
+        if (Harpymodloader.VANNILA_ROLES.contains(role) || Harpymodloader.SPECIAL_ROLES.contains(role)) {
+            /* 原版基础职业不是“扩展职业替换类型”，不应再被扩展职业数量均分。 */
+            return factionSlots;
+        }
+        if (factionSlots <= 0) {
+            return 0;
+        }
+        int enabledRoleCount = 0;
+        for (Role candidate : WatheRoles.ROLES) {
+            if (Harpymodloader.VANNILA_ROLES.contains(candidate)
+                    || Harpymodloader.SPECIAL_ROLES.contains(candidate)
+                    || !Harpymodloader.isFaction(candidate, role.getFaction())
+                    || HarpyModLoaderConfig.HANDLER.instance().disabled.contains(candidate.identifier().toString())) {
+                continue;
+            }
+            enabledRoleCount++;
+        }
+        int slots = Math.max(1, (int) Math.ceil((double) Math.max(0, factionSlots) / Math.max(1, enabledRoleCount)));
+        if (Harpymodloader.ROLE_MAX.containsKey(role.identifier())) {
+            slots = Math.min(slots, Math.max(0, Harpymodloader.ROLE_MAX.get(role.identifier())));
+        }
+        return slots;
     }
 
     private static ScoreboardRoleSelectorComponent getSelector(ServerCommandSource source) {
@@ -322,23 +398,22 @@ public class RoleWeightsCommand {
     }
 
     private static void appendFactionCounts(MutableText message, ScoreboardRoleSelectorComponent.RoleWeightRecord record) {
-        message.append(Text.literal("\n  Factions: ").formatted(Formatting.GRAY));
+        message.append(tr("list.factions").formatted(Formatting.GRAY));
         for (Faction faction : Faction.values()) {
             int count = record == null ? 0 : record.getFactionRounds(faction);
-            message.append(formatFaction(faction))
-                    .append(Text.literal("=" + count + " ").withColor(0x808080));
+            int eligible = record == null ? 0 : record.getFactionEligibilityRounds(faction);
+            message.append(tr("list.faction_entry", formatFaction(faction), count, eligible).withColor(0x808080));
         }
         if (record != null && record.getLastFaction() != null) {
-            message.append(Text.literal("last=").formatted(Formatting.DARK_GRAY))
-                    .append(formatFaction(record.getLastFaction()))
-                    .append(Text.literal("x" + record.getConsecutiveFactionRounds()).withColor(0x808080));
+            message.append(tr("list.last", formatFaction(record.getLastFaction()), record.getConsecutiveFactionRounds())
+                    .formatted(Formatting.DARK_GRAY));
         }
     }
 
     private static void appendRoleCounts(MutableText message, ScoreboardRoleSelectorComponent.RoleWeightRecord record) {
-        message.append(Text.literal("\n  Roles: ").formatted(Formatting.GRAY));
+        message.append(tr("list.roles").formatted(Formatting.GRAY));
         if (record == null || record.getRoleRoundsView().isEmpty()) {
-            message.append(Text.literal("none").formatted(Formatting.DARK_GRAY));
+            message.append(tr("value.none").formatted(Formatting.DARK_GRAY));
             return;
         }
 
@@ -346,12 +421,11 @@ public class RoleWeightsCommand {
         entries.sort(Comparator.comparing(entry -> entry.getKey().toString()));
         for (Map.Entry<Identifier, Integer> entry : entries) {
             Role role = WatheRoles.getRole(entry.getKey());
-            if (role != null) {
-                message.append(formatRole(role));
-            } else {
-                message.append(Text.literal(entry.getKey().toString()).formatted(Formatting.YELLOW));
-            }
-            message.append(Text.literal("=" + entry.getValue() + " ").withColor(0x808080));
+            MutableText roleText = role != null
+                    ? formatRole(role)
+                    : Text.literal(entry.getKey().toString()).formatted(Formatting.YELLOW);
+            int eligible = record.getRoleEligibilityRounds(entry.getKey());
+            message.append(tr("list.role_entry", roleText, entry.getValue(), eligible).withColor(0x808080));
         }
     }
 
@@ -360,24 +434,23 @@ public class RoleWeightsCommand {
             return;
         }
 
-        message.append(Text.literal("\n  Debug overrides: ").formatted(Formatting.GRAY));
+        message.append(tr("list.debug_overrides").formatted(Formatting.GRAY));
         for (Map.Entry<Faction, Double> entry : record.getFactionWeightOverridesView().entrySet()) {
-            message.append(formatFaction(entry.getKey()))
-                    .append(Text.literal("=%.4f ".formatted(entry.getValue())).withColor(0x808080));
+            message.append(tr("list.faction_override", formatFaction(entry.getKey()), "%.4f".formatted(entry.getValue()))
+                    .withColor(0x808080));
         }
         for (Map.Entry<Identifier, Double> entry : record.getRoleWeightOverridesView().entrySet()) {
             Role role = WatheRoles.getRole(entry.getKey());
-            if (role != null) {
-                message.append(formatRole(role));
-            } else {
-                message.append(Text.literal(entry.getKey().toString()).formatted(Formatting.YELLOW));
-            }
-            message.append(Text.literal("=%.4f ".formatted(entry.getValue())).withColor(0x808080));
+            MutableText roleText = role != null
+                    ? formatRole(role)
+                    : Text.literal(entry.getKey().toString()).formatted(Formatting.YELLOW);
+            message.append(tr("list.role_override", roleText, "%.4f".formatted(entry.getValue()))
+                    .withColor(0x808080));
         }
     }
 
     private static MutableText formatFaction(Faction faction) {
-        return Text.literal(faction.name().toLowerCase(Locale.ROOT)).withColor(faction.displayColor());
+        return tr("faction." + faction.name().toLowerCase(Locale.ROOT)).withColor(faction.displayColor());
     }
 
     private static MutableText formatRole(Role role) {
