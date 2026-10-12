@@ -229,9 +229,20 @@ public final class ModifierAssignmentApi {
     }
 
     public static void assignModifier(@NotNull ServerPlayerEntity player, @NotNull Modifier modifier, @NotNull WorldModifierComponent worldModifierComponent) {
-        worldModifierComponent.addModifier(player.getUuid(), modifier);
+        boolean changed = worldModifierComponent.addModifier(player.getUuid(), modifier);
+        if (!changed) {
+            return;
+        }
         recordAssignedModifier(modifier, 1);
         ModifierAssigned.EVENT.invoker().assignModifier(player, modifier);
+        /*
+         * 正常开局由 ModdedMurderGameMode 在整批分配结束后统一同步一次。
+         * API 也允许调试指令或其它扩展在批次外单独调用，此时必须立即发送，
+         * 不能再依赖已经删除的每 tick 世界组件广播。
+         */
+        if (CURRENT_SESSION.get() == null) {
+            worldModifierComponent.sync();
+        }
     }
 
     public static void recordAssignedModifier(@NotNull Modifier modifier, int count) {

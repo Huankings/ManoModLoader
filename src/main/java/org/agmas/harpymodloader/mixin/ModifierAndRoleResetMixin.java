@@ -38,8 +38,9 @@ public class ModifierAndRoleResetMixin {
         for (Modifier modifier : new ArrayList<>(worldModifierComponent.getModifiers(player))) {
             ModifierRemoved.EVENT.invoker().removeModifier(player, modifier);
         }
-        worldModifierComponent.getModifiers(player).clear();
-        worldModifierComponent.sync();
+        if (worldModifierComponent.clearModifiers(player.getUuid())) {
+            worldModifierComponent.sync();
+        }
         ResetPlayerEvent.EVENT.invoker().resetPlayer(player);
     }
 

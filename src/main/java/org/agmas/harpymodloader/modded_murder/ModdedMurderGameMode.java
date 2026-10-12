@@ -50,7 +50,9 @@ public class ModdedMurderGameMode extends MurderGameMode {
     @Override
     public void finalizeGame(ServerWorld serverWorld, GameWorldComponent gameWorldComponent) {
         WorldModifierComponent worldModifierComponent = WorldModifierComponent.KEY.get(serverWorld);
-        worldModifierComponent.getModifiers().clear();
+        if (worldModifierComponent.clearAllModifiers()) {
+            worldModifierComponent.sync();
+        }
         super.finalizeGame(serverWorld, gameWorldComponent);
     }
 
@@ -113,7 +115,7 @@ public class ModdedMurderGameMode extends MurderGameMode {
 
     public void assignModifiers(int desiredRoleCount, ServerWorld serverWorld, GameWorldComponent gameWorldComponent, List<ServerPlayerEntity> players) {
         WorldModifierComponent worldModifierComponent = WorldModifierComponent.KEY.get(serverWorld);
-        worldModifierComponent.getModifiers().clear();
+        worldModifierComponent.clearAllModifiers();
         ModifierAssignmentApi.beginAssignment(desiredRoleCount, serverWorld, gameWorldComponent, worldModifierComponent, players);
         try {
             int killerMods = (int) HMLModifiers.MODIFIERS.stream().filter(modifier -> modifier.killerOnly).count();
@@ -186,6 +188,11 @@ public class ModdedMurderGameMode extends MurderGameMode {
             }
         } finally {
             ModifierAssignmentApi.endAssignment();
+            /*
+             * 整轮分配包含随机词条、强制词条和扩展生命周期回调。
+             * 等所有写入结束后只广播一次最终表，替代旧版每 tick 重发整张词条表。
+             */
+            worldModifierComponent.sync();
         }
     }
 

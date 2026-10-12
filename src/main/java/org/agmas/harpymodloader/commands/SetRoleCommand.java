@@ -171,8 +171,9 @@ public class SetRoleCommand {
         for (Modifier modifier : new ArrayList<>(modifiers.getModifiers(player))) {
             ModifierRemoved.EVENT.invoker().removeModifier(player, modifier);
         }
-        modifiers.getModifiers(player).clear();
-        modifiers.sync();
+        if (modifiers.clearModifiers(player.getUuid())) {
+            modifiers.sync();
+        }
     }
 
     private static void resetWathePlayerStateForTransfer(ServerPlayerEntity player) {
