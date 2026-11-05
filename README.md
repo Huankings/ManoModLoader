@@ -21,7 +21,31 @@ This mod is **not** required be imported into any mod! Importing the mod into yo
 ### Roles
 The mod makes it so roles added to TMMRoles.ROLES automatically have a RoleAnnouncement and are given to players. `canUseKillerFeatures()` will decide if the role is given to killers or civillians.
 
-This mod also contains some client-side QOL features to make roles easier to see in spectator, with colored instinct glow and a role name-tag.
+This mod also contains some client-side QOL features to make roles easier to see in spectator, with colored instinct glow and a role name-tag. The role name-tag now uses Wathe `RoleNameHudApi`; Harpy no longer injects `CustomRolesRoleNameRendererMixin` into `RoleNameRenderer`.
+
+### 中立细分类与准心阵营字样 API
+
+Wathe 的真实阵营仍然只有 `CIVILIAN`、`VIGILANTE`、`KILLER`、`NEUTRAL`。Harpy 在 `org.agmas.harpymodloader.api.neutral` 下提供扩展层细分类，不改变职业分配、权重、结算或胜利：
+
+- `NeutralRoleCategories.KILLER_NEUTRAL`：杀手中立，RGB(200, 0, 150)。默认允许存活杀手本能显示目标职业色，并让目标单向显示为“杀手同伙”。
+- `NeutralRoleCategories.ORDINARY_NEUTRAL`：普通中立，RGB(0, 140, 200)。
+- `NeutralRoleCategories.INDEPENDENT_NEUTRAL`：独立中立，RGB(75, 0, 190)。
+- 未注册细分类的 `Faction.NEUTRAL` 继续显示 Wathe 的“中立阵营”。
+
+扩展注册示例：
+
+```java
+NeutralRoleCategoryApi.registerRole(
+        Identifier.of("example", "neutral_category/my_role"),
+        NeutralRoleCategoryApi.DEFAULT_PRIORITY,
+        MY_ROLE,
+        NeutralRoleCategories.ORDINARY_NEUTRAL_ID
+);
+```
+
+自定义分类先调用 `registerCategory(...)`，再登记职业。`NeutralRoleCategory.displayOnly(...)` 只提供翻译 key 与颜色；如果确实属于杀手协作分类，可在构造 `NeutralRoleCategory` 时显式开启 `killerInstinctRevealsRoleColor` 和 `showsAsKillerCohortTarget`。这两个开关默认关闭，避免自定义中立仅因注册了字样就向杀手泄漏。
+
+职业归类 resolver 按 priority 从高到低执行，同 priority 后注册优先，同 id 替换。客户端阵营字样通过 Wathe `RoleNameHudApi.registerAffiliationLine(...)` 显示，顺序固定为“职业名/词条、阵营字样、玩家名、杀手同伙”，只对 Wathe 定义的非存活观察者开放。
 
 ### Modifiers
 Modifiers are a new sub-set of roles that players can get that can be randomly assigned to any player of any role (evil or not). Modders can decide which modifiers can be given to which roles, but by default; they can be assigned to every role.

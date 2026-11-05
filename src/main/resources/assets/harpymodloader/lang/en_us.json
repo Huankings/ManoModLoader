@@ -25,6 +25,9 @@
 
   "announcement.modifier": "Modifier(s): ",
   "announcement.no_modifiers": "No Modifiers",
+  "hud.harpymodloader.role_name.affiliation.killer_neutral": "Killer Neutral",
+  "hud.harpymodloader.role_name.affiliation.ordinary_neutral": "Ordinary Neutral",
+  "hud.harpymodloader.role_name.affiliation.independent_neutral": "Independent Neutral",
 
   "commands.harpymodloader.roleweights.error.invalid_faction": "Unknown faction: %s",
   "commands.harpymodloader.roleweights.error.invalid_uuid": "Invalid UUID: %s",

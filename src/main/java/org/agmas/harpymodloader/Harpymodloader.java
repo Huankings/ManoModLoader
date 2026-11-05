@@ -37,6 +37,7 @@ import org.agmas.harpymodloader.config.HarpyModLoaderConfig;
 import org.agmas.harpymodloader.modded_murder.ModdedMurderGameMode;
 import org.agmas.harpymodloader.modifiers.HMLModifiers;
 import org.agmas.harpymodloader.modifiers.Modifier;
+import org.agmas.harpymodloader.neutral.HarpyNeutralBootstrap;
 
 public class Harpymodloader implements ModInitializer {
 
@@ -61,6 +62,12 @@ public class Harpymodloader implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        /*
+         * 中立细分类必须早于扩展模组入口注册完成。
+         * Fabric 会先初始化依赖 Harpy 的主入口，因此 NoellesRoles 等扩展随后只需登记
+         * “某职业属于哪个分类”，无需自行创建公共集合或复制显示颜色。
+         */
+        HarpyNeutralBootstrap.init();
         HarpyModLoaderConfig.HANDLER.load();
         VANNILA_ROLES.add(WatheRoles.LOOSE_END);
         VANNILA_ROLES.add(WatheRoles.CIVILIAN);

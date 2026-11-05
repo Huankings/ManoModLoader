@@ -25,6 +25,9 @@
 
   "announcement.modifier": "附加词条 ",
   "announcement.no_modifiers": "没有附加词条",
+  "hud.harpymodloader.role_name.affiliation.killer_neutral": "杀手中立",
+  "hud.harpymodloader.role_name.affiliation.ordinary_neutral": "普通中立",
+  "hud.harpymodloader.role_name.affiliation.independent_neutral": "独立中立",
 
   "commands.harpymodloader.roleweights.error.invalid_faction": "未知阵营：%s",
   "commands.harpymodloader.roleweights.error.invalid_uuid": "无效 UUID：%s",
