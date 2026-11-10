@@ -110,3 +110,17 @@ public static Modifier TINY = HMLModifiers.registerModifier(new Modifier(TINY_ID
 
 If you want to make 2-player Modifiers, You can do so inside ModifierAssigned; however I reccomend you check if the 2nd player already has a modifier to make sure the config's Modifier-Stacking is accounted for.
 
+## 玩家尸体职业、词条和中立分类
+
+Harpy 通过 Wathe `PlayerBodyInfoApi` 在尸体生成瞬间冻结词条，并通过 `PlayerBodyHudApi` 覆盖尸体的
+`IDENTITY` / `AFFILIATION` 行：职业保持职业色，每个词条连同自己的中括号使用词条色；中立职业继续使用
+`NeutralRoleCategoryApi` 的杀手侧中立、普通中立、独立中立或自定义分类名称与颜色。
+
+真实尸体复制死亡时的实际词条。人工伪尸体只读取目标本局词条数量，不复制真实词条；随后按伪造职业的
+`canOnlyBeAppliedTo`、`cannotBeAppliedTo`、`killerOnly`、`civilianOnly`、禁用配置和静态资格生成确定性随机假词条。
+带动态 eligibility predicate、无法仅凭伪造职业安全判断的词条不会进入假词条池。目标未参与本局、
+`GameWorldComponent` 没有职业记录时不显示词条。随机种子绑定尸体 UUID 和伪造职业，存档重载或时停回溯不会跳变。
+
+尸体词条保存在 `BodyModifierSnapshotComponent`，组件 ID 为 `harpymodloader:body_modifier_snapshot`。
+扩展不得在客户端根据死者当前 UUID 重新查询词条，否则转职、吞噬、回溯或后续词条变化会污染死亡时快照。
+

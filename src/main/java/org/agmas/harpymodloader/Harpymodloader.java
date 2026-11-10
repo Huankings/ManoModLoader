@@ -34,6 +34,7 @@ import org.agmas.harpymodloader.commands.SetRoleCommand;
 import org.agmas.harpymodloader.commands.argument.ModifierArgumentType;
 import org.agmas.harpymodloader.commands.argument.RoleArgumentType;
 import org.agmas.harpymodloader.config.HarpyModLoaderConfig;
+import org.agmas.harpymodloader.component.HarpyBodyInfoHandler;
 import org.agmas.harpymodloader.modded_murder.ModdedMurderGameMode;
 import org.agmas.harpymodloader.modifiers.HMLModifiers;
 import org.agmas.harpymodloader.modifiers.Modifier;
@@ -69,6 +70,7 @@ public class Harpymodloader implements ModInitializer {
          */
         HarpyNeutralBootstrap.init();
         HarpyModLoaderConfig.HANDLER.load();
+        HarpyBodyInfoHandler.init();
         VANNILA_ROLES.add(WatheRoles.LOOSE_END);
         VANNILA_ROLES.add(WatheRoles.CIVILIAN);
         VANNILA_ROLES.add(WatheRoles.KILLER);

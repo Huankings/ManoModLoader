@@ -112,6 +112,29 @@ public class Modifier {
         return this.eligibilityPredicate == null || this.eligibilityPredicate.canApply(gameWorldComponent, player, this);
     }
 
+    /**
+     * 按指定职业检查尸体伪造词条的静态资格。
+     *
+     * <p>伪尸体没有一个可以安全临时改职的真实 PlayerEntity，因此不能调用完整的
+     * canApplyTo（其中可能包含依赖运行态玩家组件的动态 predicate）。这里只允许
+     * 明确能从职业、杀手/平民限定和排斥表判断的词条，避免假尸体生成不合法专属词条。</p>
+     */
+    public boolean canApplyToSnapshot(@NotNull Role role) {
+        if (canOnlyBeAppliedTo != null && !canOnlyBeAppliedTo.contains(role)) {
+            return false;
+        }
+        if (cannotBeAppliedTo != null && cannotBeAppliedTo.contains(role)) {
+            return false;
+        }
+        if (killerOnly && !role.canUseKiller()) {
+            return false;
+        }
+        if (civilianOnly && role.canUseKiller()) {
+            return false;
+        }
+        return eligibilityPredicate == null;
+    }
+
     @FunctionalInterface
     public interface ModifierEligibilityPredicate {
         boolean canApply(@NotNull GameWorldComponent gameWorldComponent, @NotNull PlayerEntity player, @NotNull Modifier modifier);

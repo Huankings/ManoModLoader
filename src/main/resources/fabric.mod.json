@@ -30,7 +30,8 @@
 
   "custom": {
     "cardinal-components": [
-      "harpymodloader:modifier"
+      "harpymodloader:modifier",
+      "harpymodloader:body_modifier_snapshot"
     ]
   },
   "depends": {
