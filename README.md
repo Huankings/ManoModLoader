@@ -124,3 +124,15 @@ Harpy 通过 Wathe `PlayerBodyInfoApi` 在尸体生成瞬间冻结词条，并�
 尸体词条保存在 `BodyModifierSnapshotComponent`，组件 ID 为 `harpymodloader:body_modifier_snapshot`。
 扩展不得在客户端根据死者当前 UUID 重新查询词条，否则转职、吞噬、回溯或后续词条变化会污染死亡时快照。
 
+## 准心职业、词条与杀手同伙排版
+
+Harpy 的 `ObserverRoleDetailsHudHandler` 继续把职业和词条组合为同一行，例如：
+`职业[词条][词条]`。不要把每个词条拆成新的职业详情行；后续职业/词条关系提示应通过
+Wathe `RoleNameHudApi.registerAdditionalLine(...)` 注册，由 Wathe 自动排在名字和杀手同伙
+提示之后。`KillerNeutralCohortHudHandler` 只负责声明目标是否显示为杀手同伙，不应自行绘制
+坐标或重复绘制同伙文字。
+
+动态附加行 provider 只能返回文字、RGB 颜色、缩放和 `Placement`，不能使用固定 Y 坐标。
+如果 Wathe 的准心布局 API 有变化，必须先构建 Wathe、替换 Harpy 的 `libs/wathe-*.jar`，
+再构建 Harpy，并把新的 Harpy jar 同步到依赖扩展。
+
